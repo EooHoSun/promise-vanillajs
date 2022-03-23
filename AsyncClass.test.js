@@ -1,4 +1,4 @@
-import AsyncClass from "./index";
+import AsyncClass from "./AsyncClass.js";
 
 describe("create AsyncClass test", () => {
   // 확인
@@ -111,9 +111,13 @@ describe("catch chaining test", () => {
       reject(initialInput);
     });
 
-    asyncClass.catch((result) => {
-      expect(result).toEqual(initialInput);
-    });
+    asyncClass
+      .catch((result) => {
+        expect(result).toEqual(initialInput);
+      })
+      .catch((result) => {
+        expect(result).toEqual(undefined);
+      });
   });
 
   test("setTimeout test", () => {
@@ -215,5 +219,70 @@ describe("compare with Promise", () => {
         expect(promiseError).toEqual(asyncClassError);
       });
     });
+  });
+
+  test("compare with promise.all function", () => {
+    const tempTimes = Array(10)
+      .fill(undefined)
+      .reduce((prev, cur) => {
+        let num;
+        do {
+          num = Math.ceil(Math.random() * 10);
+        } while (prev.includes(num));
+        return [...prev, num];
+      }, []);
+
+    const makeAsync = (idx) => {
+      const num = tempTimes[idx];
+      return [
+        new AsyncClass((resolve, reject) => {
+          try {
+            setTimeout(() => {
+              if (num % 2 === 0) {
+                resolve(num);
+              } else {
+                reject(num);
+              }
+            }, num * 1000);
+          } catch (error) {
+            reject(num);
+          }
+        }).catch((error) => {}),
+        new Promise((resolve, reject) => {
+          try {
+            setTimeout(() => {
+              if (num % 2 === 0) {
+                resolve(num);
+              } else {
+                reject(num);
+              }
+            }, num * 1000);
+          } catch (error) {
+            reject(num);
+          }
+        }).catch((error) => {}),
+        num + "초",
+        num % 2 === 0 ? "성공" : "실패",
+      ];
+    };
+    const arr = Array(10)
+      .fill(undefined)
+      .map((e, idx) => makeAsync(idx));
+    const asyncAll = AsyncClass.all(
+      arr.map(([asyncClass, promise]) => asyncClass)
+    );
+    const promiseAll = Promise.all(arr.map(([asyncClass, promise]) => promise));
+
+    asyncAll
+      .then((asyncAllResult) => {
+        promiseAll.then((promiseAllResult) => {
+          expect(asyncAllResult).toEqual(promiseAllResult);
+        });
+      })
+      .catch((asyncAllError) => {
+        promiseAll.catch((promiseAllError) => {
+          expect(asyncAllError).toEqual(promiseAllError);
+        });
+      });
   });
 });

@@ -1,4 +1,5 @@
 export default class AsyncClass {
+  timestamp = new Date().getMilliseconds();
   static resolve(result) {
     if (result instanceof AsyncClass) {
       return new AsyncClass((resolve, reject) => {
@@ -36,20 +37,34 @@ export default class AsyncClass {
   }
 
   static all(asyncClasses) {
+    let count = asyncClasses.length;
+    const lastResult = Array(asyncClasses.length).fill(undefined);
+    let firstError = undefined;
     return new AsyncClass((resolve, reject) => {
-      let count = asyncClasses.length;
-      const lastResult = Array(asyncClasses.length).fill(undefined);
-
       asyncClasses.forEach((asyncClass, idx) => {
         asyncClass.then((result) => {
           count--;
           lastResult[idx] = result;
           if (count === 0) {
-            resolve(lastResult);
+            if (firstError) {
+              reject(firstError);
+            } else {
+              resolve(lastResult);
+            }
           }
         });
         asyncClass.catch((error) => {
-          reject(error);
+          if (!firstError) {
+            firstError = error;
+          }
+          count--;
+          if (count === 0) {
+            if (firstError) {
+              reject(firstError);
+            } else {
+              resolve(lastResult);
+            }
+          }
         });
       });
     });
