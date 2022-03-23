@@ -3,37 +3,46 @@ import AsyncClass from "./AsyncClass.js";
 describe("create AsyncClass test", () => {
   // 확인
   test("created object instance check", () => {
+    // when
     const asyncClass = new AsyncClass(() => {});
+
+    //then
     expect(asyncClass).toBeInstanceOf(AsyncClass);
   });
 
   // 확인
   test("create parameter error", () => {
+    //when then
     expect(() => new AsyncClass(1)).toThrowError(TypeError);
   });
 });
 
 describe("success test", () => {
+  // given
   const initialInput = 1;
   //확인
   test("then test", () => {
+    // when
     const asyncClass = new AsyncClass((resolve, reject) => {
       resolve(initialInput);
     });
 
+    // then
     asyncClass.then((result) => {
       expect(result).toEqual(initialInput);
     });
   });
 
+  // 확인
   test("setTimeout test", () => {
+    // when
     const asyncClass = new AsyncClass((resolve, reject) => {
       setTimeout(() => {
         resolve(initialInput);
       }, 1000);
     });
 
-    // 확인
+    // then
     asyncClass.then((result) => {
       expect(result).toEqual(initialInput);
     });
@@ -41,13 +50,16 @@ describe("success test", () => {
 });
 
 describe("error test", () => {
+  // given
   const initialInput = new Error("error");
   // 확인
   test("then test", () => {
+    // when
     const asyncClass = new AsyncClass((resolve, reject) => {
       reject(initialInput);
     });
 
+    // then
     asyncClass.then((result) => {
       expect(result).toEqual(initialInput);
     });
@@ -55,12 +67,14 @@ describe("error test", () => {
 
   // 확인
   test("setTimeout test", () => {
+    // when
     const asyncClass = new AsyncClass((resolve, reject) => {
       setTimeout(() => {
         resolve(initialInput);
       }, 1000);
     });
 
+    // then
     asyncClass.then((result) => {
       expect(result).toEqual(initialInput);
     });
@@ -68,13 +82,16 @@ describe("error test", () => {
 });
 
 describe("then chaining test", () => {
+  // given
   const initialInput = 1;
   // 확인
   test("then chaining without timeout", () => {
+    // when
     const asyncClass = new AsyncClass((resolve, reject) => {
       resolve(initialInput);
     });
 
+    // then
     asyncClass
       .then((result) => {
         expect(result).toEqual(initialInput);
@@ -85,14 +102,16 @@ describe("then chaining test", () => {
       });
   });
 
+  // 확인
   test("setTimeout test", () => {
+    // when
     const asyncClass = new AsyncClass((resolve, reject) => {
       setTimeout(() => {
         resolve(initialInput);
       }, 2000);
     });
 
-    // 확인
+    // then
     asyncClass
       .then((result) => {
         expect(result).toEqual(initialInput);
@@ -105,13 +124,20 @@ describe("then chaining test", () => {
 });
 
 describe("catch chaining test", () => {
+  // given
   const initialInput = new Error("error");
   test("catch chaining without timeout", () => {
+    // when
     const asyncClass = new AsyncClass((resolve, reject) => {
       reject(initialInput);
     });
 
+    // then
     asyncClass
+      .catch((result) => {
+        expect(result).toEqual(initialInput);
+        return result;
+      })
       .catch((result) => {
         expect(result).toEqual(initialInput);
       })
@@ -120,22 +146,18 @@ describe("catch chaining test", () => {
       });
   });
 
+  // 확인
   test("setTimeout test", () => {
+    // when
     const asyncClass = new AsyncClass((resolve, reject) => {
       setTimeout(() => {
-        resolve(initialInput);
+        reject(initialInput);
       }, 1000);
     });
-
-    asyncClass
-      .catch((error) => {
-        expect(error).toThrowError(initialInput);
-        return new Error("1");
-      })
-      .catch((error) => {
-        expect(error).toEqual(initialInput);
-        expect(error).toBeInstanceOf(Error);
-      });
+    // then
+    asyncClass.then((error) => {
+      expect(error).toThrowError(initialInput);
+    });
   });
 });
 
@@ -146,6 +168,7 @@ describe("finally test", () => {
 describe("compare with Promise", () => {
   // 확인
   test("compare with resolve success function", () => {
+    // when
     const promiseResolve = Promise.resolve(
       new Promise((resolve) => {
         resolve(1);
@@ -156,6 +179,8 @@ describe("compare with Promise", () => {
         resolve(1);
       })
     );
+
+    // then
     promiseResolve.then((e1) => {
       asyncClassResolve.then((e2) => {
         expect(e1).toEqual(e2);
@@ -165,6 +190,7 @@ describe("compare with Promise", () => {
 
   // 확인
   test("compare with resolve failure function", () => {
+    // when
     const promiseResolve = Promise.resolve(
       new Promise((resolve, reject) => {
         reject(1);
@@ -175,6 +201,8 @@ describe("compare with Promise", () => {
         reject(1);
       })
     );
+
+    // then
     promiseResolve.catch((e1) => {
       asyncClassResolve.catch((e2) => {
         expect(e1).toEqual(e2);
@@ -184,6 +212,7 @@ describe("compare with Promise", () => {
 
   // 확인
   test("compare with reject failure function", () => {
+    // when
     const promiseRejected = Promise.reject(
       new Promise((resolve, reject) => {
         reject(1);
@@ -195,6 +224,7 @@ describe("compare with Promise", () => {
       })
     );
 
+    // then
     promiseRejected.catch((promiseError) => {
       asyncClassRejected.catch((asyncClassError) => {
         expect(promiseError).toEqual(asyncClassError);
@@ -203,6 +233,7 @@ describe("compare with Promise", () => {
   });
 
   test("compare with reject success function", () => {
+    // when
     const promiseRejected = Promise.reject(
       new Promise((resolve, reject) => {
         resolve(1);
@@ -214,6 +245,7 @@ describe("compare with Promise", () => {
       })
     );
 
+    // then
     promiseRejected.then((promiseError) => {
       asyncClassRejected.then((asyncClassError) => {
         expect(promiseError).toEqual(asyncClassError);
@@ -222,6 +254,7 @@ describe("compare with Promise", () => {
   });
 
   test("compare with promise.all function", () => {
+    // given
     const tempTimes = Array(10)
       .fill(undefined)
       .reduce((prev, cur) => {
@@ -265,6 +298,8 @@ describe("compare with Promise", () => {
         num % 2 === 0 ? "성공" : "실패",
       ];
     };
+
+    // when
     const arr = Array(10)
       .fill(undefined)
       .map((e, idx) => makeAsync(idx));
@@ -273,6 +308,7 @@ describe("compare with Promise", () => {
     );
     const promiseAll = Promise.all(arr.map(([asyncClass, promise]) => promise));
 
+    // then
     asyncAll
       .then((asyncAllResult) => {
         promiseAll.then((promiseAllResult) => {
@@ -282,6 +318,54 @@ describe("compare with Promise", () => {
       .catch((asyncAllError) => {
         promiseAll.catch((promiseAllError) => {
           expect(asyncAllError).toEqual(promiseAllError);
+        });
+      });
+  });
+
+  test("throw error in then function", () => {
+    // given
+    const given = new AsyncClass((resolve, reject) => {
+      resolve(1);
+    });
+    const givenError = new Error("error in then function");
+
+    // when
+    const when = given.then((result) => {
+      throw givenError;
+    });
+
+    // then
+    when.catch((error) => {
+      expect(error).toEqual(givenError);
+    });
+  });
+
+  test("throw Error in constructor parameter(=callbackFunction) ", () => {
+    // given
+    const initialError = new Error("initialError");
+    const initialData = 1;
+
+    // when
+    const promiseErrorInConstructor = new Promise((resolve, reject) => {
+      resolve(initialData);
+      throw initialError;
+    });
+    const asyncClassErrorInConstructor = new AsyncClass((resolve, reject) => {
+      resolve(initialData);
+      throw initialError;
+    });
+
+    // then
+    promiseErrorInConstructor
+      .then((promiseResult) => {
+        expect(1).toEqual(2);
+        asyncClassErrorInConstructor.then((asyncClassResult) => {
+          expect(asyncClassResult).toEqual(promiseResult).toEqual(initialInput);
+        });
+      })
+      .catch((promiseError) => {
+        asyncClassErrorInConstructor.catch((asyncClassError) => {
+          expect(asyncClassError).toEqual(promiseError).toEqual(initialError);
         });
       });
   });

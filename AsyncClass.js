@@ -87,7 +87,15 @@ export default class AsyncClass {
       } else {
         if (this.#onThen.length !== 0) {
           this.#onThen.reduce((prev, cur) => {
-            return cur(prev);
+            let res = prev;
+            try {
+              res = cur(prev);
+            } catch (error) {
+              this.#onCatch.reduce((prev, cur) => {
+                return cur(prev);
+              }, error);
+            }
+            return res;
           }, this.#result);
           this.#onThen = [];
         }
@@ -117,7 +125,15 @@ export default class AsyncClass {
   };
 
   constructor(callback) {
-    callback(this.#resolve, this.#reject);
+    try {
+      callback(this.#resolve, this.#reject);
+    } catch (error) {
+      if (error instanceof TypeError) {
+        throw error;
+      } else {
+        this.#reject(error);
+      }
+    }
   }
 
   then(onResolve) {
@@ -126,7 +142,11 @@ export default class AsyncClass {
       return this;
     } else if (this.#state === "fulfilled") {
       return new AsyncClass((resolve, reject) => {
-        resolve(onResolve(this.#result));
+        try {
+          resolve(onResolve(this.#result));
+        } catch (error) {
+          resolve(error);
+        }
       });
     } else if (this.#state === "rejected") {
       return this;
