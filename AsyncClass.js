@@ -8,7 +8,7 @@ export default class AsyncClass {
             resolve(e);
           })
           .catch((e) => {
-            reject(e);
+            resolve(e);
           });
       });
     } else {
@@ -26,7 +26,7 @@ export default class AsyncClass {
             resolve(e);
           })
           .catch((e) => {
-            reject(e);
+            resolve(e);
           });
       });
     } else {
@@ -74,8 +74,8 @@ export default class AsyncClass {
   #result = undefined;
 
   #onThen = [];
-  #onCatch = [];
-  #onFinally;
+  #onCatch = undefined;
+  #onFinally = [];
 
   #resolve = (result) => {
     if (this.#state !== "rejected") {
@@ -99,8 +99,10 @@ export default class AsyncClass {
           }, this.#result);
           this.#onThen = [];
         }
-        this.#onFinally && this.#onFinally(this.#reject);
-        this.#onFinally = undefined;
+        this.#onFinally.forEach((onFinally) => {
+          onFinally();
+        });
+        this.#onFinally = [];
       }
     }
   };
@@ -113,13 +115,14 @@ export default class AsyncClass {
       if (error instanceof AsyncClass) {
         error.#onCatch.push(this.#reject);
       } else {
-        if (this.#onCatch.length !== 0) {
-          this.#onCatch.reduce((prev, cur) => {
-            return cur(this.#result);
-          }, this.#result);
+        if (this.#onCatch) {
+          this.#onCatch(this.#result);
+          this.#onCatch = () => {};
         }
-        this.#onFinally && this.#onFinally(this.#reject);
-        this.#onFinally = undefined;
+        this.#onFinally.forEach((onFinally) => {
+          onFinally();
+        });
+        this.#onFinally = [];
       }
     }
   };
@@ -154,23 +157,31 @@ export default class AsyncClass {
   }
   catch(onReject) {
     if (this.#state === "pending") {
-      this.#onCatch.push(onReject);
+      if (!this.#onCatch) {
+        this.#onCatch = onReject;
+      }
       return this;
     } else if (this.#state === "fulfilled") {
       return this;
     } else if (this.#state === "rejected") {
-      return new AsyncClass((resolve, reject) => {
-        reject(onReject(this.#result));
-      });
+      if (this.#onCatch) {
+        this.#onCatch(this.#result);
+      } else {
+        this.#onCatch = onReject;
+      }
     }
     return this;
   }
 
   finally(onFinally) {
     if (this.#state === "pending") {
-      this.#onFinally = onFinally;
+      this.#onFinally.push(onFinally);
+      return this;
     } else {
-      onFinally(this.#result);
+      try {
+        onFinally();
+      } catch (error) {}
+      return this;
     }
   }
 }
